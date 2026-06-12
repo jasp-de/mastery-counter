@@ -1,0 +1,27 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Next.js
+.next
+out
+
+# Env (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Data (persist via Docker volume in production)
+data/
+
+# PWA generated at build
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+public/swe-worker-*.js
+public/fallback-*.js
+
+# OS / IDE
+.DS_Store
+*.tsbuildinfo
