@@ -6,6 +6,11 @@ export const APP_DESCRIPTION =
 
 export const MASTERY_GOAL_HOURS = 10_000;
 export const DEFAULT_GOAL_HOURS = 100;
+export const GOAL_PRESETS = [
+  { label: "Habit", hours: 100 },
+  { label: "Deep dive", hours: 1_000 },
+  { label: "Mastery", hours: MASTERY_GOAL_HOURS },
+] as const;
 export const DEFAULT_COUNTER_NAME = "My goal";
 
 export const QUICK_MINUTES = [15, 20, 30, 45] as const;

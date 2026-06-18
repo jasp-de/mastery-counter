@@ -18,13 +18,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { DataBackupPanel } from "@/components/data-backup-panel";
 import { EmojiPicker, normalizeEmoji } from "@/components/emoji-picker";
 import { LevelBadge } from "@/components/gamification/level-badge";
 import { LevelTrack } from "@/components/gamification/level-track";
 import { useCountersState } from "@/components/providers/counters-provider";
 import { emojiForCounter } from "@/lib/counter-emoji";
+import { GOAL_PRESETS } from "@/lib/constants";
 import { DEFAULT_COUNTER_EMOJI } from "@/lib/emojis";
 import { levelSnapshot } from "@/lib/levels";
+import { hoursThisWeekAllCounters } from "@/lib/stats";
 import {
   addCounter,
   DEFAULT_GOAL_HOURS,
@@ -41,6 +45,9 @@ export function CountersDashboard() {
   const [newName, setNewName] = useState("");
   const [newGoal, setNewGoal] = useState(String(DEFAULT_GOAL_HOURS));
   const [newEmoji, setNewEmoji] = useState(DEFAULT_COUNTER_EMOJI);
+  const [removeId, setRemoveId] = useState<string | null>(null);
+
+  const weekHours = hoursThisWeekAllCounters(state);
 
   function handleAdd() {
     const goal = parseInt(newGoal, 10);
@@ -57,6 +64,7 @@ export function CountersDashboard() {
   function handleRemove(id: string) {
     if (state.counters.length <= 1) return;
     setState((prev) => removeCounter(prev, id));
+    setRemoveId(null);
   }
 
   if (!hydrated) {
@@ -77,6 +85,20 @@ export function CountersDashboard() {
         />
 
         {isGuest && <GuestBanner />}
+
+        <Card className="mb-6 border-primary/15 bg-primary/5">
+          <CardContent className="flex items-center justify-between gap-4 p-4">
+            <div>
+              <p className="text-sm text-muted-foreground">This week</p>
+              <p className="text-2xl font-semibold tabular-nums">
+                {formatGoalHours(weekHours)}
+              </p>
+            </div>
+            <p className="max-w-[12rem] text-right text-sm text-muted-foreground">
+              Logged across all counters · Mon–Sun
+            </p>
+          </CardContent>
+        </Card>
 
         <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">Your counters</h2>
@@ -125,6 +147,21 @@ export function CountersDashboard() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="counter-goal">Goal hours</Label>
+                <div className="flex flex-wrap gap-1.5 pb-1">
+                  {GOAL_PRESETS.map((preset) => (
+                    <Button
+                      key={preset.hours}
+                      type="button"
+                      variant={
+                        newGoal === String(preset.hours) ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setNewGoal(String(preset.hours))}
+                    >
+                      {preset.label} ({preset.hours.toLocaleString()}h)
+                    </Button>
+                  ))}
+                </div>
                 <Input
                   id="counter-goal"
                   type="number"
@@ -207,7 +244,7 @@ export function CountersDashboard() {
                         className="h-8 text-muted-foreground hover:text-destructive"
                         onClick={(e) => {
                           e.preventDefault();
-                          handleRemove(counter.id);
+                          setRemoveId(counter.id);
                         }}
                       >
                         <Trash2 className="size-3.5" />
@@ -233,6 +270,24 @@ export function CountersDashboard() {
             </button>
           </div>
         )}
+
+        <div className="mt-8">
+          <DataBackupPanel />
+        </div>
+
+        <ConfirmDialog
+          open={removeId !== null}
+          onOpenChange={(open) => {
+            if (!open) setRemoveId(null);
+          }}
+          title="Remove counter?"
+          description="This deletes the counter and all logged hours. This cannot be undone."
+          confirmLabel="Remove"
+          destructive
+          onConfirm={() => {
+            if (removeId) handleRemove(removeId);
+          }}
+        />
       </div>
     </div>
   );

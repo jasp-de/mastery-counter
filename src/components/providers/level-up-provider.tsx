@@ -26,7 +26,7 @@ interface LevelUpContextValue {
 const LevelUpContext = createContext<LevelUpContextValue | null>(null);
 
 export function LevelUpProvider({ children }: { children: ReactNode }) {
-  const { setState } = useCountersState();
+  const { setState, mutateWithUndo } = useCountersState();
   const [queue, setQueue] = useState<LevelUpEvent[]>([]);
   const current = queue[0] ?? null;
 
@@ -36,7 +36,7 @@ export function LevelUpProvider({ children }: { children: ReactNode }) {
 
   const logHoursWithCelebration = useCallback(
     (counterId: string, hours: number, date: string, note?: string) => {
-      setState((prev) => {
+      mutateWithUndo((prev) => {
         const { state, levelUp } = logHoursAndDetectLevelUp(
           prev,
           counterId,
@@ -50,7 +50,7 @@ export function LevelUpProvider({ children }: { children: ReactNode }) {
         return state;
       });
     },
-    [enqueue, setState],
+    [enqueue, mutateWithUndo],
   );
 
   function closeDialog() {

@@ -12,8 +12,17 @@
 ## Gamification
 - Goal split into **10 levels** (10% of goal each)
 - Level titles + track UI on dashboard & counter detail
-- **Level-up dialog** → spin **Wheel of Questionable Rewards** (12 nonsense prizes)
+- **Level-up dialog** → spin **Wheel of Questionable Rewards**
 - Manual wheel on counter detail anytime
+
+## Data & sync
+- Guest: localStorage · Auth: SQLite per user
+- **Merge dialog** on sign-in (browser / cloud / merge both)
+- Save status indicator · JSON export/import
+- Undo last log (quick view)
+
+## Stats
+- Weekly total on dashboard · streak + week on counter detail
 
 ## Counters
 - Optional `emoji` on each counter; picker on dashboard “Add counter” + detail “Edit counter”

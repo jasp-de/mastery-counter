@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { SaveIndicator } from "@/components/save-indicator";
 import { UserMenu } from "@/components/auth/user-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { useCountersState } from "@/components/providers/counters-provider";
 import { APP_TAGLINE } from "@/lib/constants";
 
 interface AppHeaderProps {
@@ -18,6 +23,8 @@ export function AppHeader({
   subtitle,
   backHref = "/",
 }: AppHeaderProps) {
+  const { saveStatus, isGuest, hydrated } = useCountersState();
+
   return (
     <header className="mb-10 flex items-start justify-between gap-4">
       <div className="min-w-0 flex-1">
@@ -60,8 +67,14 @@ export function AppHeader({
           </>
         )}
       </div>
-      <div className="shrink-0 pt-1">
-        <UserMenu />
+      <div className="flex shrink-0 flex-col items-end gap-2 pt-1">
+        {hydrated && (
+          <SaveIndicator status={saveStatus} isGuest={isGuest} />
+        )}
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <UserMenu />
+        </div>
       </div>
     </header>
   );

@@ -33,7 +33,7 @@ export function LevelUpDialog({ event, open, onClose }: LevelUpDialogProps) {
         if (!next) onClose();
       }}
     >
-      <DialogContent className="max-w-md overflow-hidden border-primary/30 p-0">
+      <DialogContent className="max-w-lg overflow-hidden border-primary/30 p-0">
         <LevelUpDialogBody
           key={`${event.counterId}-${event.newLevel}`}
           event={event}
@@ -115,10 +115,12 @@ function LevelUpDialogBody({
             <DialogHeader className="text-center sm:text-center">
               <DialogTitle>Wheel of questionable rewards</DialogTitle>
               <DialogDescription>
-                Absolutely zero guarantees. Maximum vibes.
+                Eight nonsense prizes. One pointer. Zero refunds.
               </DialogDescription>
             </DialogHeader>
-            <RewardWheel spinOnMount onComplete={handlePrize} />
+            <RewardWheel
+              onComplete={handlePrize}
+            />
           </>
         )}
 

@@ -4,12 +4,15 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   Clock,
+  Flame,
+  Pencil,
   Plus,
   Settings2,
   Target,
   Trash2,
   TrendingUp,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { AppHeader } from "@/components/app-header";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { GuestBanner } from "@/components/guest-banner";
@@ -35,8 +38,10 @@ import {
   sortedEntries,
   totalLoggedHours,
   updateCounter,
+  updateEntry,
   type DayEntry,
 } from "@/lib/training-hours";
+import { counterSummary } from "@/lib/stats";
 import { EmojiPicker, normalizeEmoji } from "@/components/emoji-picker";
 import { LevelPanel } from "@/components/gamification/level-panel";
 import { RewardWheel } from "@/components/gamification/reward-wheel";
@@ -68,6 +73,12 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
   const [nameInput, setNameInput] = useState("");
   const [emojiInput, setEmojiInput] = useState(DEFAULT_COUNTER_EMOJI);
   const [showSettings, setShowSettings] = useState(false);
+  const [removeEntryId, setRemoveEntryId] = useState<string | null>(null);
+
+  const stats = useMemo(
+    () => (counter ? counterSummary(counter) : null),
+    [counter],
+  );
 
   const logged = useMemo(
     () => (counter ? totalLoggedHours(counter.entries) : 0),
@@ -121,6 +132,14 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
       ...c,
       entries: c.entries.filter((e) => e.id !== id),
     }));
+    setRemoveEntryId(null);
+  }
+
+  function saveEntryEdit(
+    entryId: string,
+    patch: { date: string; hours: number; note?: string },
+  ) {
+    setState((prev) => updateEntry(prev, counterId, entryId, patch));
   }
 
   function saveSettings() {
@@ -252,7 +271,7 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
           </p>
         </section>
 
-        <div className="mb-8 grid grid-cols-3 gap-3">
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatTile
             icon={<Clock className="size-4 text-primary" />}
             label="Today"
@@ -264,9 +283,14 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
             value={formatGoalHours(logged)}
           />
           <StatTile
+            icon={<Flame className="size-4 text-primary" />}
+            label="Streak"
+            value={stats ? `${stats.streak}d` : "0d"}
+          />
+          <StatTile
             icon={<Target className="size-4 text-primary" />}
-            label="Goal"
-            value={formatGoalHours(counter.goalHours)}
+            label="This week"
+            value={stats ? formatGoalHours(stats.weekHours) : "0h"}
           />
         </div>
 
@@ -363,12 +387,27 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
                 <EntryRow
                   key={entry.id}
                   entry={entry}
-                  onRemove={() => removeEntry(entry.id)}
+                  onRemove={() => setRemoveEntryId(entry.id)}
+                  onSave={(patch) => saveEntryEdit(entry.id, patch)}
                 />
               ))}
             </ul>
           )}
         </section>
+
+        <ConfirmDialog
+          open={removeEntryId !== null}
+          onOpenChange={(open) => {
+            if (!open) setRemoveEntryId(null);
+          }}
+          title="Delete log entry?"
+          description="This removes those hours from your total."
+          confirmLabel="Delete"
+          destructive
+          onConfirm={() => {
+            if (removeEntryId) removeEntry(removeEntryId);
+          }}
+        />
       </div>
     </div>
   );
@@ -397,10 +436,71 @@ function StatTile({
 function EntryRow({
   entry,
   onRemove,
+  onSave,
 }: {
   entry: DayEntry;
   onRemove: () => void;
+  onSave: (patch: { date: string; hours: number; note?: string }) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [date, setDate] = useState(entry.date);
+  const [hours, setHours] = useState(String(entry.hours));
+  const [note, setNote] = useState(entry.note ?? "");
+
+  function submitEdit() {
+    const parsed = parseFloat(hours);
+    if (!parsed || parsed <= 0 || parsed > 24) return;
+    onSave({ date, hours: parsed, note: note.trim() || undefined });
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <li className="rounded-xl border border-primary/30 bg-card px-4 py-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <Label htmlFor={`edit-date-${entry.id}`}>Date</Label>
+            <Input
+              id={`edit-date-${entry.id}`}
+              type="date"
+              value={date}
+              max={todayISO()}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor={`edit-hours-${entry.id}`}>Hours</Label>
+            <Input
+              id={`edit-hours-${entry.id}`}
+              type="number"
+              min={0.25}
+              max={24}
+              step={0.25}
+              value={hours}
+              onChange={(e) => setHours(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="mt-3 space-y-1">
+          <Label htmlFor={`edit-note-${entry.id}`}>Note</Label>
+          <Input
+            id={`edit-note-${entry.id}`}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" onClick={submitEdit}>
+            Save
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
+        </div>
+      </li>
+    );
+  }
+
   return (
     <li className="group flex items-center gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:border-primary/30">
       <div className="min-w-0 flex-1">
@@ -420,7 +520,16 @@ function EntryRow({
       <Button
         variant="ghost"
         size="icon"
-        className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+        className="shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+        onClick={() => setEditing(true)}
+        aria-label="Edit entry"
+      >
+        <Pencil className="size-4 text-muted-foreground" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
         onClick={onRemove}
         aria-label="Remove entry"
       >

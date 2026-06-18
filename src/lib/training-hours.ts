@@ -239,6 +239,25 @@ export function logHoursToCounter(
   }));
 }
 
+export function updateEntry(
+  state: CountersState,
+  counterId: string,
+  entryId: string,
+  patch: Partial<Pick<DayEntry, "date" | "hours" | "note">>,
+): CountersState {
+  return updateCounter(state, counterId, (c) => ({
+    ...c,
+    entries: c.entries.map((entry) => {
+      if (entry.id !== entryId) return entry;
+      return {
+        ...entry,
+        ...patch,
+        note: patch.note !== undefined ? patch.note?.trim() || undefined : entry.note,
+      };
+    }),
+  }));
+}
+
 export function hoursOnDate(entries: DayEntry[], date: string): number {
   return entries
     .filter((e) => e.date === date)

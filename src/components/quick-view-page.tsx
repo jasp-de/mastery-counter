@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Undo2 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { GuestBanner } from "@/components/guest-banner";
 import { QuickMinuteRow } from "@/components/quick-minute-row";
@@ -22,20 +22,20 @@ interface Toast {
 }
 
 export function QuickViewPage() {
-  const { state, hydrated, isGuest } = useCountersState();
+  const { state, hydrated, isGuest, undo, canUndo } = useCountersState();
   const { logHoursWithCelebration } = useLevelUp();
   const [toast, setToast] = useState<Toast | null>(null);
   const today = todayISO();
 
   useEffect(() => {
     if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 2200);
+    const timer = setTimeout(() => setToast(null), 5000);
     return () => clearTimeout(timer);
   }, [toast]);
 
   function logToCounter(counter: Counter, hours: number, note?: string) {
     logHoursWithCelebration(counter.id, hours, today, note);
-    const suffix = note ? ` — ${note}` : "";
+    const suffix = note ? ` · ${note}` : "";
     setToast({
       message: `${formatDuration(hours)} → ${counter.name}${suffix}`,
     });
@@ -108,11 +108,23 @@ export function QuickViewPage() {
       </div>
 
       {toast && (
-        <div
-          className="fixed inset-x-4 bottom-6 z-50 mx-auto flex max-w-sm items-center gap-2 rounded-xl border bg-card px-4 py-3 shadow-lg"
-        >
+        <div className="fixed inset-x-4 bottom-6 z-50 mx-auto flex max-w-sm items-center gap-2 rounded-xl border bg-card px-4 py-3 shadow-lg">
           <Check className="size-4 shrink-0 text-primary" />
-          <p className="text-sm font-medium">{toast.message}</p>
+          <p className="flex-1 text-sm font-medium">{toast.message}</p>
+          {canUndo && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 shrink-0 gap-1"
+              onClick={() => {
+                undo();
+                setToast(null);
+              }}
+            >
+              <Undo2 className="size-3.5" />
+              Undo
+            </Button>
+          )}
         </div>
       )}
     </div>
