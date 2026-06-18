@@ -1,15 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Pencil, Plus, Settings2, Trash2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { AppShell } from "@/components/app-shell";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { CounterGoalFields } from "@/components/counter-goal-fields";
+import { CounterOptionsMenu } from "@/components/counter-options-menu";
 import { EmojiPicker, normalizeEmoji } from "@/components/emoji-picker";
 import { GuestBanner } from "@/components/guest-banner";
 import { MonthlyHeatmap } from "@/components/monthly-heatmap";
 import { QuickLogButtons } from "@/components/quick-log-buttons";
+import { RowOptionsMenu } from "@/components/row-options-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,13 +28,14 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useCountersState } from "@/components/providers/counters-provider";
 import { emojiForCounter } from "@/lib/counter-emoji";
-import { DEFAULT_COUNTER_EMOJI } from "@/lib/emojis";
 import { hoursThisWeek } from "@/lib/stats";
+import { counterWeeklyGoal, weekProgressPercent } from "@/lib/weekly";
 import {
   getCounter,
   logHoursToCounter,
   progressPercent,
   remainingHours,
+  removeCounter,
   sortedEntries,
   totalLoggedHours,
   updateCounter,
@@ -51,6 +55,8 @@ interface CounterDetailProps {
 
 export function CounterDetail({ counterId }: CounterDetailProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editFromUrl = searchParams.get("edit") === "1";
   const { state, setState, mutateWithUndo, hydrated, isGuest } =
     useCountersState();
   const counter = getCounter(state, counterId);
@@ -59,10 +65,29 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
   const [hours, setHours] = useState("");
   const [note, setNote] = useState("");
   const [goalInput, setGoalInput] = useState("");
+  const [weeklyGoalInput, setWeeklyGoalInput] = useState("");
   const [nameInput, setNameInput] = useState("");
-  const [emojiInput, setEmojiInput] = useState(DEFAULT_COUNTER_EMOJI);
+  const [emojiInput, setEmojiInput] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [removeEntryId, setRemoveEntryId] = useState<string | null>(null);
+  const [removeCounterOpen, setRemoveCounterOpen] = useState(false);
+
+  const settingsOpen = showSettings || editFromUrl;
+
+  function populateSettingsForm() {
+    if (!counter) return;
+    setGoalInput(String(counter.goalHours));
+    setWeeklyGoalInput(String(counterWeeklyGoal(counter)));
+    setNameInput(counter.name);
+    setEmojiInput(emojiForCounter(counter));
+  }
+
+  function closeSettings() {
+    setShowSettings(false);
+    if (editFromUrl) {
+      router.replace(`/counter/${counterId}`);
+    }
+  }
 
   const logged = useMemo(
     () => (counter ? totalLoggedHours(counter.entries) : 0),
@@ -79,6 +104,14 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
   const weekHours = useMemo(
     () => (counter ? hoursThisWeek(counter.entries) : 0),
     [counter],
+  );
+  const weeklyGoal = useMemo(
+    () => (counter ? counterWeeklyGoal(counter) : 0),
+    [counter],
+  );
+  const weekProgress = useMemo(
+    () => weekProgressPercent(weekHours, weeklyGoal),
+    [weekHours, weeklyGoal],
   );
   const entries = useMemo(
     () => (counter ? sortedEntries(counter.entries) : []),
@@ -125,16 +158,33 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
   }
 
   function saveSettings() {
-    const nextGoal = parseInt(goalInput, 10);
-    const nextName = nameInput.trim();
-    if (!nextGoal || nextGoal <= 0 || !nextName) return;
+    const nextGoal = parseInt(settingsGoal, 10);
+    const nextWeeklyGoal = parseFloat(settingsWeeklyGoal);
+    const nextName = settingsName.trim();
+    if (
+      !nextGoal ||
+      nextGoal <= 0 ||
+      !nextWeeklyGoal ||
+      nextWeeklyGoal <= 0 ||
+      !nextName
+    ) {
+      return;
+    }
     patchCounter((c) => ({
       ...c,
       name: nextName,
       goalHours: nextGoal,
-      emoji: normalizeEmoji(emojiInput),
+      weeklyGoalHours: nextWeeklyGoal,
+      emoji: normalizeEmoji(settingsEmoji),
     }));
-    setShowSettings(false);
+    closeSettings();
+  }
+
+  function handleRemoveCounter() {
+    if (state.counters.length <= 1) return;
+    setState((prev) => removeCounter(prev, counterId));
+    setRemoveCounterOpen(false);
+    router.push("/");
   }
 
   if (!hydrated) {
@@ -157,87 +207,120 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
   }
 
   const isComplete = remaining === 0 && logged > 0;
+  const settingsGoal = goalInput || String(counter.goalHours);
+  const settingsWeeklyGoal =
+    weeklyGoalInput || String(counterWeeklyGoal(counter));
+  const settingsName = nameInput || counter.name;
+  const settingsEmoji = emojiInput || emojiForCounter(counter);
 
   return (
     <AppShell>
       <AppHeader
         title={`${emojiForCounter(counter)} ${counter.name}`}
-        subtitle={`${formatDuration(weekHours)} this week`}
+        subtitle={`${formatDuration(weekHours)} / ${formatGoalHours(weeklyGoal)} this week`}
         backHref="/"
+        actions={
+          <CounterOptionsMenu
+            variant="detail"
+            counterId={counterId}
+            canDelete={state.counters.length > 1}
+            onEdit={() => {
+              populateSettingsForm();
+              setShowSettings(true);
+            }}
+            onDelete={() => setRemoveCounterOpen(true)}
+            promptNoteOnQuickLog={counter.promptNoteOnQuickLog === true}
+            onTogglePromptNote={() =>
+              patchCounter((c) => ({
+                ...c,
+                promptNoteOnQuickLog: !c.promptNoteOnQuickLog,
+              }))
+            }
+          />
+        }
       />
 
       {isGuest && <GuestBanner />}
 
-      <div className="mb-4 flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setGoalInput(String(counter.goalHours));
-            setNameInput(counter.name);
-            setEmojiInput(emojiForCounter(counter));
-            setShowSettings((v) => !v);
-          }}
-        >
-          <Settings2 className="size-4" />
-          Edit
-        </Button>
-      </div>
-
-      {showSettings && (
+      {settingsOpen && (
         <Card className="mb-4">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Settings</CardTitle>
+            <CardTitle className="text-base">Retune this lock-in</CardTitle>
+            <CardDescription>
+              Rename it, move the goalposts — we won&apos;t tell anyone.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <EmojiPicker
               id="edit-counter-emoji"
-              value={emojiInput}
+              value={settingsEmoji}
               onChange={setEmojiInput}
             />
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                value={nameInput}
+                value={settingsName}
                 onChange={(e) => setNameInput(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="goal">Goal (hours)</Label>
-              <Input
-                id="goal"
-                type="number"
-                min={1}
-                value={goalInput}
-                onChange={(e) => setGoalInput(e.target.value)}
-              />
+            <CounterGoalFields
+              totalGoal={settingsGoal}
+              weeklyGoal={settingsWeeklyGoal}
+              onTotalGoalChange={setGoalInput}
+              onWeeklyGoalChange={setWeeklyGoalInput}
+              totalGoalId="edit-goal"
+              weeklyGoalId="edit-weekly-goal"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={saveSettings}>Save</Button>
+              <Button variant="ghost" onClick={closeSettings}>
+                Cancel
+              </Button>
             </div>
-            <Button onClick={saveSettings}>Save</Button>
           </CardContent>
         </Card>
       )}
 
-      <section className="mb-6">
-        <div className="mb-3 flex items-end justify-between gap-3">
+      <Card className="mb-6">
+        <CardContent className="space-y-4 p-4">
           <div>
-            <p className="text-xs text-muted-foreground">Remaining</p>
-            <p className="text-4xl font-semibold tabular-nums tracking-tight">
-              {formatGoalHours(remaining)}
-            </p>
+            <div className="mb-2 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Total remaining</p>
+                <p className="text-3xl font-semibold tabular-nums tracking-tight">
+                  {formatGoalHours(remaining)}
+                </p>
+              </div>
+              {isComplete && (
+                <Badge variant="secondary" className="text-primary">
+                  Locked in
+                </Badge>
+              )}
+            </div>
+            <Progress value={progress} className="mb-1.5 h-2" />
+            <div className="flex justify-between text-xs tabular-nums text-muted-foreground">
+              <span>{formatGoalHours(logged)} logged</span>
+              <span>{formatGoalHours(counter.goalHours)} goal</span>
+            </div>
           </div>
-          {isComplete && (
-            <Badge variant="secondary" className="text-primary">
-              Complete
-            </Badge>
-          )}
-        </div>
-        <Progress value={progress} className="mb-2 h-2" />
-        <div className="flex justify-between text-xs tabular-nums text-muted-foreground">
-          <span>{formatGoalHours(logged)} logged</span>
-          <span>{formatGoalHours(counter.goalHours)} goal</span>
-        </div>
-      </section>
+          <Separator />
+          <div>
+            <div className="mb-2 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">This week</p>
+                <p className="text-2xl font-semibold tabular-nums tracking-tight">
+                  {formatDuration(weekHours)}
+                </p>
+              </div>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {formatGoalHours(weeklyGoal)} goal
+              </span>
+            </div>
+            <Progress value={weekProgress} className="h-1.5" />
+          </div>
+        </CardContent>
+      </Card>
 
       <MonthlyHeatmap entries={counter.entries} />
 
@@ -247,7 +330,7 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
             <Plus className="size-4" />
             Log time
           </CardTitle>
-          <CardDescription>Add hours for any day.</CardDescription>
+          <CardDescription>Missed a session? Catch up here.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -306,7 +389,7 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
         </div>
         {entries.length === 0 ? (
           <div className="rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">
-            No entries yet.
+            No entries yet. Tap a button above — future you will thank present you.
           </div>
         ) : (
           <ul className="space-y-2">
@@ -328,12 +411,22 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
           if (!open) setRemoveEntryId(null);
         }}
         title="Delete entry?"
-        description="Removes these hours from your total."
+        description="Those hours vanish from your total. Like they never happened. (They did.)"
         confirmLabel="Delete"
         destructive
         onConfirm={() => {
           if (removeEntryId) removeEntry(removeEntryId);
         }}
+      />
+
+      <ConfirmDialog
+        open={removeCounterOpen}
+        onOpenChange={setRemoveCounterOpen}
+        title="Break the lock?"
+        description="Deletes this counter and every hour you logged. Gone. Poof."
+        confirmLabel="Remove"
+        destructive
+        onConfirm={handleRemoveCounter}
       />
     </AppShell>
   );
@@ -408,7 +501,7 @@ function EntryRow({
   }
 
   return (
-    <li className="group flex items-center gap-2 rounded-lg border px-3 py-2.5">
+    <li className="flex items-center gap-2 rounded-lg border px-3 py-2.5">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-sm">
           <span className="font-medium tabular-nums">
@@ -425,24 +518,25 @@ function EntryRow({
           </p>
         )}
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-8 shrink-0"
-        onClick={() => setEditing(true)}
-        aria-label="Edit"
-      >
-        <Pencil className="size-3.5" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-8 shrink-0"
-        onClick={onRemove}
-        aria-label="Delete"
-      >
-        <Trash2 className="size-3.5 text-muted-foreground" />
-      </Button>
+      <RowOptionsMenu
+        ariaLabel="Entry options"
+        items={[
+          {
+            kind: "action",
+            label: "Edit",
+            icon: Pencil,
+            onSelect: () => setEditing(true),
+          },
+          { kind: "separator" },
+          {
+            kind: "action",
+            label: "Delete",
+            icon: Trash2,
+            destructive: true,
+            onSelect: onRemove,
+          },
+        ]}
+      />
     </li>
   );
 }

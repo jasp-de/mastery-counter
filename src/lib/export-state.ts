@@ -3,13 +3,16 @@ import { normalizeCountersState } from "@/lib/training-hours";
 
 const EXPORT_VERSION = 1;
 
-export interface MasteryExport {
+export interface LockInExport {
   version: number;
   exportedAt: string;
   counters: CountersState["counters"];
 }
 
-export function buildExport(state: CountersState): MasteryExport {
+/** @deprecated Use LockInExport */
+export type MasteryExport = LockInExport;
+
+export function buildExport(state: CountersState): LockInExport {
   const normalized = normalizeCountersState(state);
   return {
     version: EXPORT_VERSION,
@@ -23,14 +26,17 @@ export function exportToJson(state: CountersState): string {
 }
 
 export function parseImport(raw: string): CountersState {
-  const data = JSON.parse(raw) as MasteryExport | CountersState;
+  const data = JSON.parse(raw) as LockInExport | CountersState;
   if ("counters" in data && Array.isArray(data.counters)) {
     return normalizeCountersState(data);
   }
   throw new Error("Invalid backup file");
 }
 
-export function downloadJson(state: CountersState, filename = "mastery-backup.json"): void {
+export function downloadJson(
+  state: CountersState,
+  filename = "lock-in-backup.json",
+): void {
   const blob = new Blob([exportToJson(state)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");

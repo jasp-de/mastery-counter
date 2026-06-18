@@ -10,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { APP_NAME } from "@/lib/constants";
 
 export default function OfflinePage() {
   return (
@@ -25,8 +24,8 @@ export default function OfflinePage() {
           </div>
           <CardTitle>You&apos;re offline</CardTitle>
           <CardDescription>
-            {APP_NAME} needs a connection to sign in and sync. Guest data in
-            this browser may still be available once you reconnect.
+            No signal — can&apos;t sign in or sync. Your guest hours should still
+            be here when the Wi‑Fi stops gaslighting you.
           </CardDescription>
         </CardHeader>
         <CardContent>

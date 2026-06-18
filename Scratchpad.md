@@ -1,19 +1,16 @@
 # Scratchpad
 
 ## Done
-- [x] Rebrand → **MASTERY**
-- [x] Mastery + habit templates
-- [x] Minute quick buttons + custom duration
-- [x] Quick view (`/quick`)
-- [x] Emoji picker on create/edit counter
-- [x] Guest merge, save indicator, undo, edit entries
-- [x] **Production cleanup** — removed gamification (levels, wheel), `/weekly` route, bottom nav, glass UI
-- [x] Week mode = **All time / This week** toggle in Counters card header
+- [x] Rebrand → **Lock In** (violet theme, lock mark, PWA icons)
+- [x] Deep practice + habit templates
+- [x] Inline quick log, per-goal notes toggle, sortable counters
+- [x] Production cleanup — no gamification, week toggle on dashboard
+- [x] Achievable presets — lower defaults (25h/2h wk), template-specific goals, shorter quick-log chips
+- [x] Lock In voice pass — coherent copy, dry humor, lock-in motif across UI + templates
 
 ## Next
 - [ ] Unit tests (merge, stats, weekly)
 - [ ] Onboarding empty state → templates CTA
-- [ ] Per-counter suggested minute buttons from templates
 
 ## Branch
 feature/training-hours-counter

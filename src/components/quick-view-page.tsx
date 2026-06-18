@@ -1,48 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Check, Undo2 } from "lucide-react";
+import { useState } from "react";
 import { AppHeader } from "@/components/app-header";
 import { AppShell } from "@/components/app-shell";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { CounterOptionsMenu } from "@/components/counter-options-menu";
+import { CounterQuickLogStrip } from "@/components/counter-quick-log-strip";
 import { GuestBanner } from "@/components/guest-banner";
-import { QuickMinuteRow } from "@/components/quick-minute-row";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { useLogFeedback } from "@/components/log-feedback-toast";
 import { useCountersState } from "@/components/providers/counters-provider";
 import { emojiForCounter } from "@/lib/counter-emoji";
 import {
   hoursOnDate,
   logHoursToCounter,
+  removeCounter,
+  updateCounter,
   type Counter,
 } from "@/lib/training-hours";
 import { formatDuration, todayISO } from "@/lib/utils";
 
-interface Toast {
-  message: string;
-}
-
 export function QuickViewPage() {
-  const { state, hydrated, isGuest, mutateWithUndo, undo, canUndo } =
+  const { state, hydrated, isGuest, mutateWithUndo, undo, canUndo, setState } =
     useCountersState();
-  const [toast, setToast] = useState<Toast | null>(null);
+  const { showFeedback, toast } = useLogFeedback({ canUndo, undo });
+  const [removeId, setRemoveId] = useState<string | null>(null);
   const today = todayISO();
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 5000);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   function logToCounter(counter: Counter, hours: number, note?: string) {
     mutateWithUndo((prev) =>
       logHoursToCounter(prev, counter.id, hours, today, note),
     );
     const suffix = note ? ` · ${note}` : "";
-    setToast({
-      message: `${formatDuration(hours)} → ${counter.name}${suffix}`,
-    });
+    showFeedback(`${formatDuration(hours)} → ${counter.name}${suffix}`);
   }
 
   if (!hydrated) {
@@ -58,7 +48,7 @@ export function QuickViewPage() {
       <AppShell>
         <AppHeader
           title="Quick log"
-          subtitle="Tap a duration — logs to today."
+          subtitle="Fullscreen lock-in — tap, log, done."
           backHref="/"
         />
 
@@ -66,39 +56,66 @@ export function QuickViewPage() {
 
         {state.counters.length === 0 ? (
           <div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
-            No counters yet.{" "}
+            No locks yet.{" "}
             <Link href="/" className="text-primary hover:underline">
-              Create one
+              Start one on home
             </Link>
           </div>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {state.counters.map((counter) => {
               const todayTotal = hoursOnDate(counter.entries, today);
               return (
-                <li key={counter.id}>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="mb-3 flex items-center justify-between gap-2">
-                        <h3 className="flex min-w-0 items-center gap-2 truncate font-medium">
-                          <span className="text-lg" aria-hidden="true">
-                            {emojiForCounter(counter)}
-                          </span>
-                          {counter.name}
-                        </h3>
-                        <Badge variant="secondary" className="tabular-nums">
-                          Today {formatDuration(todayTotal)}
-                        </Badge>
-                      </div>
-                      <QuickMinuteRow
-                        compact
-                        label={counter.name}
-                        onLog={(hours, note) =>
-                          logToCounter(counter, hours, note)
+                <li
+                  key={counter.id}
+                  className="overflow-hidden rounded-xl border bg-card"
+                >
+                  <div className="flex items-center justify-between gap-2 px-4 py-3">
+                    <h3 className="flex min-w-0 items-center gap-2 truncate font-medium">
+                      <span className="text-lg" aria-hidden="true">
+                        {emojiForCounter(counter)}
+                      </span>
+                      {counter.name}
+                    </h3>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {formatDuration(todayTotal)} today
+                      </span>
+                      <CounterOptionsMenu
+                        counterId={counter.id}
+                        canDelete={state.counters.length > 1}
+                        onDelete={() => setRemoveId(counter.id)}
+                        promptNoteOnQuickLog={
+                          counter.promptNoteOnQuickLog === true
+                        }
+                        onTogglePromptNote={() =>
+                          setState((prev) =>
+                            updateCounter(prev, counter.id, (c) => ({
+                              ...c,
+                              promptNoteOnQuickLog: !c.promptNoteOnQuickLog,
+                            })),
+                          )
                         }
                       />
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
+                  <div className="border-t bg-muted/20 px-3 py-3">
+                    <CounterQuickLogStrip
+                      key={`${counter.id}-${counter.quickLogMinutes?.join("-") ?? "default"}-${counter.promptNoteOnQuickLog ? "notes" : "nonotes"}`}
+                      counter={counter}
+                      onLog={(hours, note) =>
+                        logToCounter(counter, hours, note)
+                      }
+                      onSavePresets={(minutes) =>
+                        setState((prev) =>
+                          updateCounter(prev, counter.id, (c) => ({
+                            ...c,
+                            quickLogMinutes: minutes,
+                          })),
+                        )
+                      }
+                    />
+                  </div>
                 </li>
               );
             })}
@@ -106,26 +123,23 @@ export function QuickViewPage() {
         )}
       </AppShell>
 
-      {toast && (
-        <div className="fixed inset-x-4 bottom-6 z-50 mx-auto flex max-w-sm items-center gap-2 rounded-lg border bg-card px-4 py-3 shadow-lg">
-          <Check className="size-4 shrink-0 text-primary" />
-          <p className="flex-1 text-sm">{toast.message}</p>
-          {canUndo && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 shrink-0 gap-1"
-              onClick={() => {
-                undo();
-                setToast(null);
-              }}
-            >
-              <Undo2 className="size-3.5" />
-              Undo
-            </Button>
-          )}
-        </div>
-      )}
+      <ConfirmDialog
+        open={removeId !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemoveId(null);
+        }}
+        title="Break the lock?"
+        description="Deletes this counter and every hour you logged. Gone. Poof."
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => {
+          if (!removeId || state.counters.length <= 1) return;
+          setState((prev) => removeCounter(prev, removeId));
+          setRemoveId(null);
+        }}
+      />
+
+      {toast}
     </>
   );
 }

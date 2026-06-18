@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MasteryMark } from "@/components/brand/mastery-mark";
+import { LockInMark } from "@/components/brand/lock-in-mark";
 import { APP_EMOJI, APP_NAME, APP_TAGLINE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -47,16 +47,11 @@ export function BrandLogo({
           styles.box,
         )}
       >
-        <MasteryMark className={styles.icon} />
+        <LockInMark className={styles.icon} />
       </div>
       <div className="min-w-0">
-        <p className={cn("font-semibold leading-none uppercase", styles.title)}>
-          {APP_EMOJI && (
-            <span className="mr-1.5 normal-case tracking-normal" aria-hidden="true">
-              {APP_EMOJI}
-            </span>
-          )}
-          {APP_NAME}
+        <p className={cn("font-semibold leading-none tracking-tight", styles.title)}>
+          <span className="uppercase tracking-[0.14em]">{APP_NAME}</span>
         </p>
         {showTagline && (
           <p className={cn("mt-1.5 text-muted-foreground", styles.tagline)}>

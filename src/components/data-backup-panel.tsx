@@ -3,13 +3,6 @@
 import { useRef } from "react";
 import { Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { useCountersState } from "@/components/providers/counters-provider";
 import { downloadJson, parseImport } from "@/lib/export-state";
 import { mergeCountersStates } from "@/lib/merge-state";
@@ -25,28 +18,23 @@ export function DataBackupPanel() {
         const imported = parseImport(String(reader.result));
         setState((prev) => mergeCountersStates(prev, imported));
       } catch {
-        window.alert("Could not read that backup file.");
+        window.alert("That backup file didn't unlock. Try another export.");
       }
     };
     reader.readAsText(file);
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Backup & restore</CardTitle>
-        <CardDescription>
-          Export your counters as JSON or merge a backup file.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => downloadJson(state)}
-        >
+    <details className="group rounded-lg border">
+      <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium marker:content-none [&::-webkit-details-marker]:hidden">
+        <span className="text-muted-foreground group-open:text-foreground">
+          Backup your locks
+        </span>
+      </summary>
+      <div className="flex flex-wrap gap-2 border-t px-4 py-3">
+        <Button variant="outline" size="sm" onClick={() => downloadJson(state)}>
           <Download className="size-4" />
-          Export JSON
+          Export
         </Button>
         <Button
           variant="outline"
@@ -54,7 +42,7 @@ export function DataBackupPanel() {
           onClick={() => fileRef.current?.click()}
         >
           <Upload className="size-4" />
-          Import JSON
+          Import
         </Button>
         <input
           ref={fileRef}
@@ -67,7 +55,7 @@ export function DataBackupPanel() {
             e.target.value = "";
           }}
         />
-      </CardContent>
-    </Card>
+      </div>
+    </details>
   );
 }

@@ -1,13 +1,13 @@
-# MASTERY
+# Lock In
 
-A small hour tracker. Multiple counters, quick logging, weekly view — no fluff.
+A small hour tracker. Multiple counters, quick logging, weekly view — stay locked in.
 
 ## Features
 
 - **Counters** with emoji, goals, and progress
 - **All time / This week** toggle on the dashboard
-- **Templates** for mastery paths and daily habits
-- Minute quick-add (15m, 20m, 30m, 45m) + custom duration · `/quick` view
+- **Templates** for deep practice paths and daily habits
+- Inline **quick log** with editable presets per counter
 - Streaks, monthly heatmaps
 - Guest mode or Google sync with **merge on sign-in**
 - Export / import JSON backups

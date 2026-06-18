@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
-interface MasteryMarkProps {
+interface LockInMarkProps {
   className?: string;
 }
 
-export function MasteryMark({ className }: MasteryMarkProps) {
+export function LockInMark({ className }: LockInMarkProps) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -12,21 +12,22 @@ export function MasteryMark({ className }: MasteryMarkProps) {
       aria-hidden="true"
       className={cn("size-6", className)}
     >
-      <path
-        d="M4 18L12 4l8 14H4z"
+      <rect
+        x="6"
+        y="11"
+        width="12"
+        height="9"
+        rx="2"
         stroke="currentColor"
         strokeWidth="1.75"
-        strokeLinejoin="round"
       />
       <path
-        d="M12 9v4M12 15h.01"
+        d="M8.5 11V8.5a3.5 3.5 0 0 1 7 0V11"
         stroke="currentColor"
         strokeWidth="1.75"
         strokeLinecap="round"
       />
+      <circle cx="12" cy="15.5" r="1.25" fill="currentColor" />
     </svg>
   );
 }
-
-/** @deprecated Use MasteryMark */
-export const HourglassMark = MasteryMark;

@@ -35,16 +35,15 @@ export default function LoginPage() {
             </>
           ) : (
             <p className="rounded-lg border bg-muted/50 px-3 py-2 text-center text-sm text-muted-foreground">
-              Cloud sign-in is not configured on this server. Use guest mode
-              below — your data stays in this browser.
+              Cloud sign-in isn&apos;t wired up here. Guest mode still works — hours stay in this browser until you lock in with Google.
             </p>
           )}
           <Button variant="outline" className="w-full" asChild>
-            <Link href="/">Continue without signing in</Link>
+            <Link href="/">Lock in as guest</Link>
           </Button>
           {googleEnabled && (
             <p className="text-center text-xs text-muted-foreground">
-              Guest mode saves data in this browser only.
+              Guest mode — local lock only. Sign in to sync across devices.
             </p>
           )}
         </CardContent>

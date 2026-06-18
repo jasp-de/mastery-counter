@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MasteryMark } from "@/components/brand/mastery-mark";
+import { LockInMark } from "@/components/brand/lock-in-mark";
 import { APP_NAME } from "@/lib/constants";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -51,12 +51,12 @@ export function InstallPrompt() {
     <div className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-md rounded-xl border bg-card p-4 shadow-lg sm:inset-x-auto sm:right-6 sm:left-auto">
       <div className="flex gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <MasteryMark className="size-5" />
+          <LockInMark className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-medium">Install {APP_NAME}</p>
           <p className="text-sm text-muted-foreground">
-            Add to your home screen for quick daily logging.
+            Pin it to your home screen — lock in before the distraction opens.
           </p>
           <div className="mt-3 flex gap-2">
             <Button size="sm" onClick={install}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +22,8 @@ import {
 interface QuickMinuteRowProps {
   onLog: (hours: number, note?: string) => void;
   compact?: boolean;
+  prominent?: boolean;
+  minutes?: readonly number[];
   showHours?: boolean;
   showCustom?: boolean;
   promptNote?: boolean;
@@ -29,9 +31,14 @@ interface QuickMinuteRowProps {
   label?: string;
 }
 
+const chipClass =
+  "h-8 w-full rounded-md border border-border/60 bg-muted/30 text-xs font-medium tabular-nums text-foreground shadow-none hover:border-primary/35 hover:bg-muted/60";
+
 export function QuickMinuteRow({
   onLog,
   compact = false,
+  prominent = false,
+  minutes = QUICK_MINUTES,
   showHours = true,
   showCustom = true,
   promptNote = true,
@@ -41,6 +48,22 @@ export function QuickMinuteRow({
   const [customMinutes, setCustomMinutes] = useState("");
   const [pendingHours, setPendingHours] = useState<number | null>(null);
   const [note, setNote] = useState("");
+
+  const chips = useMemo(() => {
+    const items: { key: string; label: string; hours: number }[] = minutes.map(
+      (m) => ({
+        key: `m-${m}`,
+        label: formatMinutesLabel(m),
+        hours: minutesToHours(m),
+      }),
+    );
+    if (showHours) {
+      for (const h of QUICK_HOURS) {
+        items.push({ key: `h-${h}`, label: `${h}h`, hours: h });
+      }
+    }
+    return items;
+  }, [minutes, showHours]);
 
   function requestLog(hours: number) {
     if (promptNote) {
@@ -60,54 +83,53 @@ export function QuickMinuteRow({
   }
 
   function submitCustom() {
-    const minutes = parseInt(customMinutes, 10);
-    if (!minutes || minutes <= 0 || minutes > 24 * 60) return;
+    const parsed = parseInt(customMinutes, 10);
+    if (!parsed || parsed <= 0 || parsed > 24 * 60) return;
     setCustomMinutes("");
     setCustomOpen(false);
-    requestLog(minutesToHours(minutes));
+    requestLog(minutesToHours(parsed));
   }
 
-  const btnSize = compact ? "sm" : "sm";
   const pendingLabel =
     pendingHours !== null ? formatDuration(pendingHours) : "";
 
   return (
     <>
-      <div className={cn("flex flex-wrap gap-1.5", !compact && "gap-2")}>
-        {QUICK_MINUTES.map((m) => (
+      <div
+        className={cn(
+          prominent && "grid grid-cols-4 gap-1.5",
+          compact && "flex flex-wrap gap-1.5",
+          !compact && !prominent && "flex flex-wrap gap-2",
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {chips.map((chip) => (
           <Button
-            key={m}
+            key={chip.key}
             type="button"
-            variant="secondary"
-            size={btnSize}
-            className={compact ? "h-8 px-2.5 text-xs" : undefined}
-            onClick={() => requestLog(minutesToHours(m))}
+            variant="ghost"
+            size="sm"
+            className={prominent ? chipClass : compact ? "h-8 px-2.5 text-xs" : undefined}
+            onClick={() => requestLog(chip.hours)}
           >
-            +{formatMinutesLabel(m)}
+            +{chip.label}
           </Button>
         ))}
-        {showHours &&
-          QUICK_HOURS.map((h) => (
-            <Button
-              key={h}
-              type="button"
-              variant="secondary"
-              size={btnSize}
-              className={compact ? "h-8 px-2.5 text-xs" : undefined}
-              onClick={() => requestLog(h)}
-            >
-              +{h}h
-            </Button>
-          ))}
         {showCustom && (
           <Button
             type="button"
-            variant="outline"
-            size={btnSize}
-            className={compact ? "h-8 px-2.5 text-xs" : undefined}
+            variant="ghost"
+            size="sm"
+            className={
+              prominent
+                ? cn(chipClass, "text-muted-foreground")
+                : compact
+                  ? "h-8 px-2.5 text-xs"
+                  : undefined
+            }
             onClick={() => setCustomOpen(true)}
           >
-            …
+            Custom
           </Button>
         )}
       </div>
@@ -138,7 +160,7 @@ export function QuickMinuteRow({
               />
             </div>
             <Button className="w-full" onClick={submitCustom}>
-              Continue
+              Log
             </Button>
           </div>
         </DialogContent>

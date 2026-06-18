@@ -12,7 +12,7 @@ const dmSans = DM_Sans({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#1a3d32",
+  themeColor: "#1a1625",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

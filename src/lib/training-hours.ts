@@ -1,12 +1,17 @@
 import {
   DEFAULT_COUNTER_NAME,
   DEFAULT_GOAL_HOURS,
+  DEFAULT_WEEKLY_GOAL_HOURS,
   GUEST_STORAGE_KEY,
   LEGACY_GUEST_STORAGE_KEY,
   LEGACY_GUEST_STORAGE_KEY_V1,
   LEGACY_GUEST_STORAGE_KEY_V2,
   LEGACY_GUEST_STORAGE_KEY_V3,
 } from "@/lib/constants";
+import {
+  defaultQuickLogMinutesForName,
+  sanitizeQuickLogMinutes,
+} from "@/lib/counter-quick-presets";
 
 export interface DayEntry {
   id: string;
@@ -20,6 +25,9 @@ export interface Counter {
   name: string;
   emoji?: string;
   goalHours: number;
+  weeklyGoalHours?: number;
+  quickLogMinutes?: number[];
+  promptNoteOnQuickLog?: boolean;
   entries: DayEntry[];
   createdAt: string;
 }
@@ -53,12 +61,16 @@ export function createCounter(
   name: string,
   goalHours: number = DEFAULT_GOAL_HOURS,
   emoji?: string,
+  weeklyGoalHours: number = DEFAULT_WEEKLY_GOAL_HOURS,
 ): Counter {
+  const trimmedName = name.trim() || "New counter";
   return {
     id: crypto.randomUUID(),
-    name: name.trim() || "New counter",
+    name: trimmedName,
     emoji: emoji?.trim() || undefined,
     goalHours,
+    weeklyGoalHours,
+    quickLogMinutes: defaultQuickLogMinutesForName(trimmedName),
     entries: [],
     createdAt: new Date().toISOString(),
   };
@@ -142,6 +154,15 @@ export function normalizeCountersState(data: unknown): CountersState {
   const counters = state.counters.filter(isCounter).map((counter) => ({
     ...counter,
     goalHours: counter.goalHours > 0 ? counter.goalHours : DEFAULT_GOAL_HOURS,
+    weeklyGoalHours:
+      typeof counter.weeklyGoalHours === "number" &&
+      counter.weeklyGoalHours > 0
+        ? counter.weeklyGoalHours
+        : DEFAULT_WEEKLY_GOAL_HOURS,
+    quickLogMinutes:
+      sanitizeQuickLogMinutes(counter.quickLogMinutes) ??
+      defaultQuickLogMinutesForName(counter.name),
+    promptNoteOnQuickLog: counter.promptNoteOnQuickLog === true,
     entries: counter.entries.filter(isDayEntry),
   }));
 
@@ -198,14 +219,50 @@ export function removeCounter(
   return next.length > 0 ? { counters: next } : createDefaultState();
 }
 
+export function reorderCounters(
+  state: CountersState,
+  fromIndex: number,
+  toIndex: number,
+): CountersState {
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= state.counters.length ||
+    toIndex >= state.counters.length
+  ) {
+    return state;
+  }
+  const counters = [...state.counters];
+  const [moved] = counters.splice(fromIndex, 1);
+  if (!moved) return state;
+  counters.splice(toIndex, 0, moved);
+  return { counters };
+}
+
+export function moveCounter(
+  state: CountersState,
+  counterId: string,
+  direction: "up" | "down",
+): CountersState {
+  const index = state.counters.findIndex((c) => c.id === counterId);
+  if (index === -1) return state;
+  const target = direction === "up" ? index - 1 : index + 1;
+  return reorderCounters(state, index, target);
+}
+
 export function addCounter(
   state: CountersState,
   name: string,
   goalHours?: number,
   emoji?: string,
+  weeklyGoalHours?: number,
 ): CountersState {
   return {
-    counters: [...state.counters, createCounter(name, goalHours, emoji)],
+    counters: [
+      ...state.counters,
+      createCounter(name, goalHours, emoji, weeklyGoalHours),
+    ],
   };
 }
 

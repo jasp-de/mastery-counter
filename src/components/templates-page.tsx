@@ -15,7 +15,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useCountersState } from "@/components/providers/counters-provider";
-import { MASTERY_GOAL_HOURS } from "@/lib/constants";
 import {
   HABIT_TEMPLATES,
   MASTERY_TEMPLATES,
@@ -29,7 +28,6 @@ import {
   type CountersState,
 } from "@/lib/training-hours";
 import {
-  cn,
   formatGoalHours,
   formatMinutesLabel,
   minutesToHours,
@@ -57,6 +55,7 @@ export function TemplatesPage() {
       template.name,
       template.defaultGoalHours,
       template.emoji,
+      template.defaultWeeklyGoalHours,
     );
     setState((prev) => appendCounter(prev, counter));
     router.push(`/counter/${counter.id}`);
@@ -71,6 +70,7 @@ export function TemplatesPage() {
           template.name,
           template.defaultGoalHours,
           template.emoji,
+          template.defaultWeeklyGoalHours,
         );
         next = appendCounter(prev, created);
         counter = created;
@@ -96,7 +96,7 @@ export function TemplatesPage() {
     <AppShell>
         <AppHeader
           title="Templates"
-          subtitle="Start from a preset or log a quick session."
+          subtitle="Pick a lock. Log a session. Walk away smug."
           backHref="/"
         />
 
@@ -104,9 +104,9 @@ export function TemplatesPage() {
 
         <section className="mb-10">
           <div className="mb-4">
-            <h2 className="text-lg font-semibold">10,000 hour mastery</h2>
+            <h2 className="text-lg font-semibold">Deep practice</h2>
             <p className="text-sm text-muted-foreground">
-              Long-arc skills — psychotherapy, writing, instrument, and more.
+              Big skills, small horizons — lock in before inspiration evaporates.
             </p>
           </div>
           <ul className="space-y-4">
@@ -125,7 +125,7 @@ export function TemplatesPage() {
           <div className="mb-4">
             <h2 className="text-lg font-semibold">Daily habits</h2>
             <p className="text-sm text-muted-foreground">
-              Smaller goals with minute-sized steps.
+              Tiny locks. Hard to skip, easy to stack.
             </p>
           </div>
           <ul className="space-y-4">
@@ -158,11 +158,9 @@ function TemplateCard({
   onLog: (template: ActivityTemplate, minutes: number) => void;
   onAdd: (template: ActivityTemplate) => void;
 }) {
-  const isMastery = template.category === "mastery";
-
   return (
     <li>
-      <Card className={cn(isMastery && "border-primary/20")}>
+      <Card>
         <CardHeader className="pb-3">
           <div className="flex items-start gap-3">
             <span className="text-3xl" aria-hidden="true">
@@ -171,11 +169,10 @@ function TemplateCard({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <CardTitle className="text-lg">{template.name}</CardTitle>
-                {isMastery && (
-                  <Badge variant="secondary" className="bg-primary/10 text-primary">
-                    {formatGoalHours(MASTERY_GOAL_HOURS)} goal
-                  </Badge>
-                )}
+                <Badge variant="secondary" className="tabular-nums">
+                  {formatGoalHours(template.defaultGoalHours)} ·{" "}
+                  {formatGoalHours(template.defaultWeeklyGoalHours)}/wk
+                </Badge>
               </div>
               <CardDescription className="mt-1">
                 {template.description}
@@ -186,7 +183,7 @@ function TemplateCard({
         <CardContent className="space-y-3">
           <div>
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Suggested steps
+              Lock-in sizes
             </p>
             <div className="flex flex-wrap gap-2">
               {template.suggestedMinutes.map((m) => (
@@ -202,7 +199,7 @@ function TemplateCard({
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={() => onAdd(template)}>
-            Add as counter
+            Add to my locks
           </Button>
         </CardContent>
       </Card>
