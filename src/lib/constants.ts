@@ -1,8 +1,8 @@
 export const APP_NAME = "MASTERY";
 export const APP_EMOJI = "";
-export const APP_TAGLINE = "10,000 hours to mastery";
+export const APP_TAGLINE = "Hour tracker";
 export const APP_DESCRIPTION =
-  "Track your path to 10,000 hours. Log minutes, build counters, use mastery templates.";
+  "Track hours toward your goals. Simple counters, quick logging, weekly view.";
 
 export const MASTERY_GOAL_HOURS = 10_000;
 export const DEFAULT_GOAL_HOURS = 100;

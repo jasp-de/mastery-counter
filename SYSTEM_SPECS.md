@@ -1,19 +1,18 @@
 # MASTERY — System Specs
 
 ## Brand
-- **MASTERY** — tagline: *10,000 hours to mastery*
+- **MASTERY** — tagline: *Hour tracker*
 - Logo: peak mark (`MasteryMark`) + uppercase wordmark
-- `MASTERY_GOAL_HOURS = 10_000`
+- `MASTERY_GOAL_HOURS = 10_000` (template preset only)
 
 ## Templates (`/templates`)
 - **Mastery** (10k goal): psychotherapy, writing, instrument, programming, visual art, athletics, language, chess
 - **Habits** (smaller goals): reading, stretching, meditation, walking, journaling
 
-## Gamification
-- Goal split into **10 levels** (10% of goal each)
-- Level titles + track UI on dashboard & counter detail
-- **Level-up dialog** → spin **Wheel of Questionable Rewards**
-- Manual wheel on counter detail anytime
+## Dashboard view modes
+- **All time** — progress vs each counter’s goal
+- **This week** — hours logged this calendar week vs editable weekly target (localStorage)
+- Toggle lives in the **Counters** card header (no separate route)
 
 ## Data & sync
 - Guest: localStorage · Auth: SQLite per user
@@ -22,15 +21,14 @@
 - Undo last log (quick view)
 
 ## Stats
-- Weekly total on dashboard · streak + week on counter detail
+- Weekly hours on dashboard (week mode) · streak on counter detail · monthly heatmap
 
 ## Counters
 - Optional `emoji` on each counter; picker on dashboard “Add counter” + detail “Edit counter”
 - Fallback: template name match → default 🎯
 
 ## Routes
-- `/` dashboard
-- `/weekly` **weekly mode** — goal, day chart, by-counter breakdown
+- `/` dashboard (all-time + week toggle)
 - `/quick` quick log all counters
 - `/templates` mastery + habit templates
 - `/counter/[id]` detail + heatmap + quick log

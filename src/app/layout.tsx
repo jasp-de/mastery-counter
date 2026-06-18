@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Fraunces } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import { AuthProvider } from "@/components/providers/auth-provider";
-import { LevelUpProvider } from "@/components/providers/level-up-provider";
 import { CountersProvider } from "@/components/providers/counters-provider";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
@@ -10,11 +9,6 @@ import "./globals.css";
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
-});
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-display",
 });
 
 export const viewport: Viewport = {
@@ -54,11 +48,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${dmSans.variable} ${fraunces.variable} font-sans`}>
+      <body className={`${dmSans.variable} font-sans`}>
         <AuthProvider>
-          <CountersProvider>
-            <LevelUpProvider>{children}</LevelUpProvider>
-          </CountersProvider>
+          <CountersProvider>{children}</CountersProvider>
         </AuthProvider>
         <InstallPrompt />
       </body>

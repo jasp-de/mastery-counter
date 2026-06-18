@@ -3,19 +3,20 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Check, Undo2 } from "lucide-react";
-import { PageShell } from "@/components/page-shell";
 import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 import { GuestBanner } from "@/components/guest-banner";
 import { QuickMinuteRow } from "@/components/quick-minute-row";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { LevelBadge } from "@/components/gamification/level-badge";
-import { useLevelUp } from "@/components/providers/level-up-provider";
 import { useCountersState } from "@/components/providers/counters-provider";
 import { emojiForCounter } from "@/lib/counter-emoji";
-import { levelSnapshot } from "@/lib/levels";
-import { hoursOnDate, type Counter } from "@/lib/training-hours";
+import {
+  hoursOnDate,
+  logHoursToCounter,
+  type Counter,
+} from "@/lib/training-hours";
 import { formatDuration, todayISO } from "@/lib/utils";
 
 interface Toast {
@@ -23,8 +24,8 @@ interface Toast {
 }
 
 export function QuickViewPage() {
-  const { state, hydrated, isGuest, undo, canUndo } = useCountersState();
-  const { logHoursWithCelebration } = useLevelUp();
+  const { state, hydrated, isGuest, mutateWithUndo, undo, canUndo } =
+    useCountersState();
   const [toast, setToast] = useState<Toast | null>(null);
   const today = todayISO();
 
@@ -35,7 +36,9 @@ export function QuickViewPage() {
   }, [toast]);
 
   function logToCounter(counter: Counter, hours: number, note?: string) {
-    logHoursWithCelebration(counter.id, hours, today, note);
+    mutateWithUndo((prev) =>
+      logHoursToCounter(prev, counter.id, hours, today, note),
+    );
     const suffix = note ? ` · ${note}` : "";
     setToast({
       message: `${formatDuration(hours)} → ${counter.name}${suffix}`,
@@ -45,58 +48,47 @@ export function QuickViewPage() {
   if (!hydrated) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">Loading…</p>
       </div>
     );
   }
 
   return (
     <>
-      <PageShell>
+      <AppShell>
         <AppHeader
           title="Quick log"
-          subtitle="Tap a duration to add time to any counter — all entries go to today."
+          subtitle="Tap a duration — logs to today."
           backHref="/"
         />
 
         {isGuest && <GuestBanner />}
 
         {state.counters.length === 0 ? (
-          <div className="rounded-xl border border-dashed py-12 text-center text-muted-foreground">
+          <div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
             No counters yet.{" "}
-            <Link
-              href="/"
-              className="text-primary underline-offset-4 hover:underline"
-            >
-              Create one first
+            <Link href="/" className="text-primary hover:underline">
+              Create one
             </Link>
           </div>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-2">
             {state.counters.map((counter) => {
               const todayTotal = hoursOnDate(counter.entries, today);
-              const level = levelSnapshot(counter);
-
               return (
                 <li key={counter.id}>
-                  <Card className="glass-card">
+                  <Card>
                     <CardContent className="p-4">
                       <div className="mb-3 flex items-center justify-between gap-2">
-                        <h3 className="flex min-w-0 items-center gap-2 truncate font-semibold">
-                          <span
-                            className="text-xl leading-none"
-                            aria-hidden="true"
-                          >
+                        <h3 className="flex min-w-0 items-center gap-2 truncate font-medium">
+                          <span className="text-lg" aria-hidden="true">
                             {emojiForCounter(counter)}
                           </span>
                           {counter.name}
                         </h3>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <LevelBadge level={level.level} size="sm" />
-                          <Badge variant="secondary" className="tabular-nums">
-                            Today {formatDuration(todayTotal)}
-                          </Badge>
-                        </div>
+                        <Badge variant="secondary" className="tabular-nums">
+                          Today {formatDuration(todayTotal)}
+                        </Badge>
                       </div>
                       <QuickMinuteRow
                         compact
@@ -112,12 +104,12 @@ export function QuickViewPage() {
             })}
           </ul>
         )}
-      </PageShell>
+      </AppShell>
 
       {toast && (
-        <div className="fixed inset-x-4 bottom-24 z-50 mx-auto flex max-w-sm items-center gap-2 rounded-xl border bg-card/95 px-4 py-3 shadow-lg backdrop-blur-md">
+        <div className="fixed inset-x-4 bottom-6 z-50 mx-auto flex max-w-sm items-center gap-2 rounded-lg border bg-card px-4 py-3 shadow-lg">
           <Check className="size-4 shrink-0 text-primary" />
-          <p className="flex-1 text-sm font-medium">{toast.message}</p>
+          <p className="flex-1 text-sm">{toast.message}</p>
           {canUndo && (
             <Button
               size="sm"

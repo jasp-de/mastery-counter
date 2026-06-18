@@ -1,14 +1,14 @@
 # MASTERY
 
-Track your path to **10,000 hours**. Log minutes, build counters, level up, spin nonsense rewards.
+A small hour tracker. Multiple counters, quick logging, weekly view — no fluff.
 
 ## Features
 
-- **10,000h mastery templates** — psychotherapy, writing, instrument, programming, and more
-- Multiple counters with emoji picker, progress bars, and **10-level gamification**
-- **Wheel of questionable rewards** on level up (and anytime on counter pages)
+- **Counters** with emoji, goals, and progress
+- **All time / This week** toggle on the dashboard
+- **Templates** for mastery paths and daily habits
 - Minute quick-add (15m, 20m, 30m, 45m) + custom duration · `/quick` view
-- Streaks, weekly totals, monthly heatmaps
+- Streaks, monthly heatmaps
 - Guest mode or Google sync with **merge on sign-in**
 - Export / import JSON backups
 - Installable PWA · dark mode
@@ -19,7 +19,7 @@ Track your path to **10,000 hours**. Log minutes, build counters, level up, spin
 npm install && npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — try **Templates** for mastery examples.
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Google sign-in (optional)
 

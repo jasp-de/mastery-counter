@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageShell } from "@/components/page-shell";
 import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 import { GuestBanner } from "@/components/guest-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -93,10 +93,10 @@ export function TemplatesPage() {
   }
 
   return (
-    <PageShell>
+    <AppShell>
         <AppHeader
           title="Templates"
-          subtitle="Inspired by the 10,000-hour path to mastery. Tap a step to log today, or add as a counter."
+          subtitle="Start from a preset or log a quick session."
           backHref="/"
         />
 
@@ -145,7 +145,7 @@ export function TemplatesPage() {
             <Link href="/">Back to counters</Link>
           </Button>
         </div>
-    </PageShell>
+    </AppShell>
   );
 }
 
@@ -162,7 +162,7 @@ function TemplateCard({
 
   return (
     <li>
-      <Card className={cn("glass-card", isMastery && "border-primary/25")}>
+      <Card className={cn(isMastery && "border-primary/20")}>
         <CardHeader className="pb-3">
           <div className="flex items-start gap-3">
             <span className="text-3xl" aria-hidden="true">

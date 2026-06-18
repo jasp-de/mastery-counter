@@ -1,23 +1,15 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Clock,
-  Flame,
-  Pencil,
-  Plus,
-  Settings2,
-  Target,
-  Trash2,
-  TrendingUp,
-} from "lucide-react";
-import { ConfirmDialog } from "@/components/confirm-dialog";
-import { PageShell } from "@/components/page-shell";
+import { Pencil, Plus, Settings2, Trash2 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
-import { BrandLogo } from "@/components/brand/brand-logo";
+import { AppShell } from "@/components/app-shell";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { EmojiPicker, normalizeEmoji } from "@/components/emoji-picker";
 import { GuestBanner } from "@/components/guest-banner";
 import { MonthlyHeatmap } from "@/components/monthly-heatmap";
+import { QuickLogButtons } from "@/components/quick-log-buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,8 +24,12 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useCountersState } from "@/components/providers/counters-provider";
+import { emojiForCounter } from "@/lib/counter-emoji";
+import { DEFAULT_COUNTER_EMOJI } from "@/lib/emojis";
+import { hoursThisWeek } from "@/lib/stats";
 import {
   getCounter,
+  logHoursToCounter,
   progressPercent,
   remainingHours,
   sortedEntries,
@@ -42,14 +38,6 @@ import {
   updateEntry,
   type DayEntry,
 } from "@/lib/training-hours";
-import { counterSummary } from "@/lib/stats";
-import { EmojiPicker, normalizeEmoji } from "@/components/emoji-picker";
-import { LevelPanel } from "@/components/gamification/level-panel";
-import { RewardWheel } from "@/components/gamification/reward-wheel";
-import { QuickLogButtons } from "@/components/quick-log-buttons";
-import { useLevelUp } from "@/components/providers/level-up-provider";
-import { emojiForCounter } from "@/lib/counter-emoji";
-import { DEFAULT_COUNTER_EMOJI } from "@/lib/emojis";
 import {
   formatDate,
   formatDuration,
@@ -63,8 +51,8 @@ interface CounterDetailProps {
 
 export function CounterDetail({ counterId }: CounterDetailProps) {
   const router = useRouter();
-  const { state, setState, hydrated, isGuest } = useCountersState();
-  const { logHoursWithCelebration } = useLevelUp();
+  const { state, setState, mutateWithUndo, hydrated, isGuest } =
+    useCountersState();
   const counter = getCounter(state, counterId);
 
   const [date, setDate] = useState(todayISO());
@@ -75,11 +63,6 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
   const [emojiInput, setEmojiInput] = useState(DEFAULT_COUNTER_EMOJI);
   const [showSettings, setShowSettings] = useState(false);
   const [removeEntryId, setRemoveEntryId] = useState<string | null>(null);
-
-  const stats = useMemo(
-    () => (counter ? counterSummary(counter) : null),
-    [counter],
-  );
 
   const logged = useMemo(
     () => (counter ? totalLoggedHours(counter.entries) : 0),
@@ -93,17 +76,12 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
     () => (counter ? progressPercent(counter.goalHours, counter.entries) : 0),
     [counter],
   );
-  const entries = useMemo(
-    () => (counter ? sortedEntries(counter.entries) : []),
+  const weekHours = useMemo(
+    () => (counter ? hoursThisWeek(counter.entries) : 0),
     [counter],
   );
-  const todayTotal = useMemo(
-    () =>
-      counter
-        ? counter.entries
-            .filter((e) => e.date === todayISO())
-            .reduce((sum, e) => sum + e.hours, 0)
-        : 0,
+  const entries = useMemo(
+    () => (counter ? sortedEntries(counter.entries) : []),
     [counter],
   );
 
@@ -118,11 +96,14 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
     const parsed = value ?? parseFloat(hours);
     if (!parsed || parsed <= 0 || parsed > 24) return;
 
-    logHoursWithCelebration(
-      counterId,
-      parsed,
-      date,
-      noteOverride !== undefined ? noteOverride : note,
+    mutateWithUndo((prev) =>
+      logHoursToCounter(
+        prev,
+        counterId,
+        parsed,
+        date,
+        noteOverride !== undefined ? noteOverride : note,
+      ),
     );
     if (value === undefined) setNote("");
     setHours("");
@@ -158,18 +139,19 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
 
   if (!hydrated) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <BrandLogo size="md" />
-        <p className="text-muted-foreground">Loading…</p>
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-muted-foreground">Loading…</p>
       </div>
     );
   }
 
   if (!counter) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">Counter not found.</p>
-        <Button onClick={() => router.push("/")}>Back to all counters</Button>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3">
+        <p className="text-sm text-muted-foreground">Counter not found.</p>
+        <Button variant="outline" onClick={() => router.push("/")}>
+          Back
+        </Button>
       </div>
     );
   }
@@ -177,258 +159,183 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
   const isComplete = remaining === 0 && logged > 0;
 
   return (
-    <PageShell>
-        <AppHeader
-          title={`${emojiForCounter(counter)} ${counter.name}`}
-          subtitle="Log hours and track progress toward this goal."
-          backHref="/"
-        />
+    <AppShell>
+      <AppHeader
+        title={`${emojiForCounter(counter)} ${counter.name}`}
+        subtitle={`${formatDuration(weekHours)} this week`}
+        backHref="/"
+      />
 
-        {isGuest && <GuestBanner />}
+      {isGuest && <GuestBanner />}
 
-        <div className="mb-6 flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setGoalInput(String(counter.goalHours));
-              setNameInput(counter.name);
-              setEmojiInput(emojiForCounter(counter));
-              setShowSettings((v) => !v);
-            }}
-          >
-            <Settings2 className="size-4" />
-            Edit counter
-          </Button>
-        </div>
-
-        {showSettings && (
-          <Card className="mb-6 border-primary/20">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Counter settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <EmojiPicker
-                id="edit-counter-emoji"
-                value={emojiInput}
-                onChange={setEmojiInput}
-              />
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="goal">Goal hours</Label>
-                <Input
-                  id="goal"
-                  type="number"
-                  min={1}
-                  value={goalInput}
-                  onChange={(e) => setGoalInput(e.target.value)}
-                />
-              </div>
-              <Button onClick={saveSettings}>Save</Button>
-            </CardContent>
-          </Card>
-        )}
-
-        <section className="mb-8">
-          <Card className="glass-card mb-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardContent className="p-5">
-              <LevelPanel counter={counter} />
-            </CardContent>
-          </Card>
-
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Remaining</p>
-              <p
-                className="text-5xl font-semibold tabular-nums tracking-tight text-primary sm:text-6xl"
-                style={{ fontFamily: "var(--font-display), serif" }}
-              >
-                {formatGoalHours(remaining)}
-              </p>
-            </div>
-            {isComplete && (
-              <Badge className="mb-2 bg-primary/15 text-primary hover:bg-primary/15">
-                Goal reached
-              </Badge>
-            )}
-          </div>
-
-          <Progress value={progress} className="mb-3 h-4" />
-
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>{formatGoalHours(logged)} logged</span>
-            <span>{formatGoalHours(counter.goalHours)} goal</span>
-          </div>
-          <p className="mt-2 text-right text-sm font-medium text-foreground">
-            {progress.toFixed(1)}% complete
-          </p>
-        </section>
-
-        <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatTile
-            icon={<Clock className="size-4 text-primary" />}
-            label="Today"
-            value={formatDuration(todayTotal)}
-          />
-          <StatTile
-            icon={<TrendingUp className="size-4 text-primary" />}
-            label="Logged"
-            value={formatGoalHours(logged)}
-          />
-          <StatTile
-            icon={<Flame className="size-4 text-primary" />}
-            label="Streak"
-            value={stats ? `${stats.streak}d` : "0d"}
-          />
-          <StatTile
-            icon={<Target className="size-4 text-primary" />}
-            label="This week"
-            value={stats ? formatGoalHours(stats.weekHours) : "0h"}
-          />
-        </div>
-
-        <MonthlyHeatmap entries={counter.entries} />
-
-        <Card className="glass-card mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Plus className="size-5 text-primary" />
-              Log hours
-            </CardTitle>
-            <CardDescription>
-              Add how many hours you worked today or on any past date
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={date}
-                  max={todayISO()}
-                  onChange={(e) => setDate(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hours">Hours worked</Label>
-                <Input
-                  id="hours"
-                  type="number"
-                  min={0.25}
-                  max={24}
-                  step={0.25}
-                  placeholder="e.g. 6"
-                  value={hours}
-                  onChange={(e) => setHours(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") addHours();
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="note">Note (optional)</Label>
-              <Input
-                id="note"
-                placeholder="What did you work on?"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-            </div>
-
-            <QuickLogButtons
-              label={counter.name}
-              onLog={(h, note) => addHours(h, note)}
-            />
-
-            <Button className="w-full" onClick={() => addHours()}>
-              Add hours
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card mb-8 border-dashed">
-          <CardHeader>
-            <CardTitle className="text-base">Wheel of questionable rewards</CardTitle>
-            <CardDescription>
-              No level up required. Spin when you need nonsense.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RewardWheel />
-          </CardContent>
-        </Card>
-
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Daily log</h2>
-            <span className="text-sm text-muted-foreground">
-              {entries.length} {entries.length === 1 ? "entry" : "entries"}
-            </span>
-          </div>
-
-          {entries.length === 0 ? (
-            <div className="rounded-xl border border-dashed py-12 text-center text-muted-foreground">
-              No hours logged yet. Add your first entry above.
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {entries.map((entry) => (
-                <EntryRow
-                  key={entry.id}
-                  entry={entry}
-                  onRemove={() => setRemoveEntryId(entry.id)}
-                  onSave={(patch) => saveEntryEdit(entry.id, patch)}
-                />
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <ConfirmDialog
-          open={removeEntryId !== null}
-          onOpenChange={(open) => {
-            if (!open) setRemoveEntryId(null);
+      <div className="mb-4 flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setGoalInput(String(counter.goalHours));
+            setNameInput(counter.name);
+            setEmojiInput(emojiForCounter(counter));
+            setShowSettings((v) => !v);
           }}
-          title="Delete log entry?"
-          description="This removes those hours from your total."
-          confirmLabel="Delete"
-          destructive
-          onConfirm={() => {
-            if (removeEntryId) removeEntry(removeEntryId);
-          }}
-        />
-    </PageShell>
-  );
-}
-
-function StatTile({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl border bg-card/80 px-4 py-3 backdrop-blur-sm">
-      <div className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-        {icon}
-        {label}
+        >
+          <Settings2 className="size-4" />
+          Edit
+        </Button>
       </div>
-      <p className="text-xl font-semibold tabular-nums">{value}</p>
-    </div>
+
+      {showSettings && (
+        <Card className="mb-4">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <EmojiPicker
+              id="edit-counter-emoji"
+              value={emojiInput}
+              onChange={setEmojiInput}
+            />
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="goal">Goal (hours)</Label>
+              <Input
+                id="goal"
+                type="number"
+                min={1}
+                value={goalInput}
+                onChange={(e) => setGoalInput(e.target.value)}
+              />
+            </div>
+            <Button onClick={saveSettings}>Save</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <section className="mb-6">
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-xs text-muted-foreground">Remaining</p>
+            <p className="text-4xl font-semibold tabular-nums tracking-tight">
+              {formatGoalHours(remaining)}
+            </p>
+          </div>
+          {isComplete && (
+            <Badge variant="secondary" className="text-primary">
+              Complete
+            </Badge>
+          )}
+        </div>
+        <Progress value={progress} className="mb-2 h-2" />
+        <div className="flex justify-between text-xs tabular-nums text-muted-foreground">
+          <span>{formatGoalHours(logged)} logged</span>
+          <span>{formatGoalHours(counter.goalHours)} goal</span>
+        </div>
+      </section>
+
+      <MonthlyHeatmap entries={counter.entries} />
+
+      <Card className="mb-6 mt-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Plus className="size-4" />
+            Log time
+          </CardTitle>
+          <CardDescription>Add hours for any day.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                max={todayISO()}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="hours">Hours</Label>
+              <Input
+                id="hours"
+                type="number"
+                min={0.25}
+                max={24}
+                step={0.25}
+                placeholder="e.g. 2"
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") addHours();
+                }}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="note">Note</Label>
+            <Input
+              id="note"
+              placeholder="Optional"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+          <QuickLogButtons
+            label={counter.name}
+            onLog={(h, n) => addHours(h, n)}
+          />
+          <Button className="w-full" onClick={() => addHours()}>
+            Add
+          </Button>
+        </CardContent>
+      </Card>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-semibold">History</h2>
+          <span className="text-xs text-muted-foreground">
+            {entries.length} entries
+          </span>
+        </div>
+        {entries.length === 0 ? (
+          <div className="rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">
+            No entries yet.
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {entries.map((entry) => (
+              <EntryRow
+                key={entry.id}
+                entry={entry}
+                onRemove={() => setRemoveEntryId(entry.id)}
+                onSave={(patch) => saveEntryEdit(entry.id, patch)}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <ConfirmDialog
+        open={removeEntryId !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemoveEntryId(null);
+        }}
+        title="Delete entry?"
+        description="Removes these hours from your total."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (removeEntryId) removeEntry(removeEntryId);
+        }}
+      />
+    </AppShell>
   );
 }
 
@@ -455,7 +362,7 @@ function EntryRow({
 
   if (editing) {
     return (
-      <li className="rounded-xl border border-primary/30 bg-card px-4 py-3">
+      <li className="rounded-lg border p-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
             <Label htmlFor={`edit-date-${entry.id}`}>Date</Label>
@@ -501,17 +408,19 @@ function EntryRow({
   }
 
   return (
-    <li className="group flex items-center gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:border-primary/30">
+    <li className="group flex items-center gap-2 rounded-lg border px-3 py-2.5">
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="font-medium tabular-nums">{formatDuration(entry.hours)}</p>
-          <Separator orientation="vertical" className="h-4" />
-          <p className="truncate text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="font-medium tabular-nums">
+            {formatDuration(entry.hours)}
+          </span>
+          <Separator orientation="vertical" className="h-3" />
+          <span className="truncate text-muted-foreground">
             {formatDate(entry.date)}
-          </p>
+          </span>
         </div>
         {entry.note && (
-          <p className="mt-0.5 truncate text-sm text-muted-foreground">
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
             {entry.note}
           </p>
         )}
@@ -519,20 +428,20 @@ function EntryRow({
       <Button
         variant="ghost"
         size="icon"
-        className="shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+        className="size-8 shrink-0"
         onClick={() => setEditing(true)}
-        aria-label="Edit entry"
+        aria-label="Edit"
       >
-        <Pencil className="size-4 text-muted-foreground" />
+        <Pencil className="size-3.5" />
       </Button>
       <Button
         variant="ghost"
         size="icon"
-        className="shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+        className="size-8 shrink-0"
         onClick={onRemove}
-        aria-label="Remove entry"
+        aria-label="Delete"
       >
-        <Trash2 className="size-4 text-muted-foreground" />
+        <Trash2 className="size-3.5 text-muted-foreground" />
       </Button>
     </li>
   );

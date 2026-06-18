@@ -50,10 +50,7 @@ export function BrandLogo({
         <MasteryMark className={styles.icon} />
       </div>
       <div className="min-w-0">
-        <p
-          className={cn("font-semibold leading-none uppercase", styles.title)}
-          style={{ fontFamily: "var(--font-display), serif" }}
-        >
+        <p className={cn("font-semibold leading-none uppercase", styles.title)}>
           {APP_EMOJI && (
             <span className="mr-1.5 normal-case tracking-normal" aria-hidden="true">
               {APP_EMOJI}
