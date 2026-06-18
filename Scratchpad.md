@@ -11,6 +11,8 @@
 - [x] Guest merge on sign-in, save indicator, undo, edit entries
 - [x] Weekly stats, streaks, goal presets, delete confirms, backup JSON, dark mode, CI
 
+- [x] Weekly mode (`/weekly`) + bottom nav + glass UI polish
+
 ## Next
 - [ ] Unit tests (levels, merge, stats)
 - [ ] Onboarding empty state → templates CTA

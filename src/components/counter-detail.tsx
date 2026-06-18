@@ -13,6 +13,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { PageShell } from "@/components/page-shell";
 import { AppHeader } from "@/components/app-header";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { GuestBanner } from "@/components/guest-banner";
@@ -176,8 +177,7 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
   const isComplete = remaining === 0 && logged > 0;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent/40 via-background to-background">
-      <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
+    <PageShell>
         <AppHeader
           title={`${emojiForCounter(counter)} ${counter.name}`}
           subtitle="Log hours and track progress toward this goal."
@@ -237,7 +237,7 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
         )}
 
         <section className="mb-8">
-          <Card className="mb-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <Card className="glass-card mb-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
             <CardContent className="p-5">
               <LevelPanel counter={counter} />
             </CardContent>
@@ -296,7 +296,7 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
 
         <MonthlyHeatmap entries={counter.entries} />
 
-        <Card className="mb-8">
+        <Card className="glass-card mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Plus className="size-5 text-primary" />
@@ -357,7 +357,7 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
           </CardContent>
         </Card>
 
-        <Card className="mb-8 border-dashed">
+        <Card className="glass-card mb-8 border-dashed">
           <CardHeader>
             <CardTitle className="text-base">Wheel of questionable rewards</CardTitle>
             <CardDescription>
@@ -408,8 +408,7 @@ export function CounterDetail({ counterId }: CounterDetailProps) {
             if (removeEntryId) removeEntry(removeEntryId);
           }}
         />
-      </div>
-    </div>
+    </PageShell>
   );
 }
 

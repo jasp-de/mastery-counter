@@ -30,6 +30,7 @@
 
 ## Routes
 - `/` dashboard
+- `/weekly` **weekly mode** — goal, day chart, by-counter breakdown
 - `/quick` quick log all counters
 - `/templates` mastery + habit templates
 - `/counter/[id]` detail + heatmap + quick log

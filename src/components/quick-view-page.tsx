@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Check, Undo2 } from "lucide-react";
+import { PageShell } from "@/components/page-shell";
 import { AppHeader } from "@/components/app-header";
 import { GuestBanner } from "@/components/guest-banner";
 import { QuickMinuteRow } from "@/components/quick-minute-row";
@@ -50,8 +51,8 @@ export function QuickViewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent/40 via-background to-background">
-      <div className="mx-auto max-w-2xl px-4 py-10 pb-24 sm:px-6">
+    <>
+      <PageShell>
         <AppHeader
           title="Quick log"
           subtitle="Tap a duration to add time to any counter — all entries go to today."
@@ -63,7 +64,10 @@ export function QuickViewPage() {
         {state.counters.length === 0 ? (
           <div className="rounded-xl border border-dashed py-12 text-center text-muted-foreground">
             No counters yet.{" "}
-            <Link href="/" className="text-primary underline-offset-4 hover:underline">
+            <Link
+              href="/"
+              className="text-primary underline-offset-4 hover:underline"
+            >
               Create one first
             </Link>
           </div>
@@ -75,11 +79,14 @@ export function QuickViewPage() {
 
               return (
                 <li key={counter.id}>
-                  <Card>
+                  <Card className="glass-card">
                     <CardContent className="p-4">
                       <div className="mb-3 flex items-center justify-between gap-2">
                         <h3 className="flex min-w-0 items-center gap-2 truncate font-semibold">
-                          <span className="text-xl leading-none" aria-hidden="true">
+                          <span
+                            className="text-xl leading-none"
+                            aria-hidden="true"
+                          >
                             {emojiForCounter(counter)}
                           </span>
                           {counter.name}
@@ -105,10 +112,10 @@ export function QuickViewPage() {
             })}
           </ul>
         )}
-      </div>
+      </PageShell>
 
       {toast && (
-        <div className="fixed inset-x-4 bottom-6 z-50 mx-auto flex max-w-sm items-center gap-2 rounded-xl border bg-card px-4 py-3 shadow-lg">
+        <div className="fixed inset-x-4 bottom-24 z-50 mx-auto flex max-w-sm items-center gap-2 rounded-xl border bg-card/95 px-4 py-3 shadow-lg backdrop-blur-md">
           <Check className="size-4 shrink-0 text-primary" />
           <p className="flex-1 text-sm font-medium">{toast.message}</p>
           {canUndo && (
@@ -127,6 +134,6 @@ export function QuickViewPage() {
           )}
         </div>
       )}
-    </div>
+    </>
   );
 }

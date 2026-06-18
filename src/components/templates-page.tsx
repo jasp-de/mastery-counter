@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PageShell } from "@/components/page-shell";
 import { AppHeader } from "@/components/app-header";
 import { GuestBanner } from "@/components/guest-banner";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ import {
   type CountersState,
 } from "@/lib/training-hours";
 import {
+  cn,
   formatGoalHours,
   formatMinutesLabel,
   minutesToHours,
@@ -91,8 +93,7 @@ export function TemplatesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent/40 via-background to-background">
-      <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
+    <PageShell>
         <AppHeader
           title="Templates"
           subtitle="Inspired by the 10,000-hour path to mastery. Tap a step to log today, or add as a counter."
@@ -144,8 +145,7 @@ export function TemplatesPage() {
             <Link href="/">Back to counters</Link>
           </Button>
         </div>
-      </div>
-    </div>
+    </PageShell>
   );
 }
 
@@ -162,7 +162,7 @@ function TemplateCard({
 
   return (
     <li>
-      <Card className={isMastery ? "border-primary/25" : undefined}>
+      <Card className={cn("glass-card", isMastery && "border-primary/25")}>
         <CardHeader className="pb-3">
           <div className="flex items-start gap-3">
             <span className="text-3xl" aria-hidden="true">

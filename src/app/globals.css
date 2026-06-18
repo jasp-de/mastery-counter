@@ -166,3 +166,14 @@
 .wheel-result-pop {
   animation: wheel-result-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
+
+.page-shell {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, color-mix(in oklch, var(--primary) 12%, transparent), transparent 55%),
+    radial-gradient(ellipse 80% 50% at 100% 50%, color-mix(in oklch, var(--primary) 6%, transparent), transparent 45%),
+    var(--background);
+}
+
+.glass-card {
+  @apply bg-card/80 backdrop-blur-sm shadow-sm;
+}

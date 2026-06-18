@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ChevronRight, LayoutTemplate, Plus, Trash2, Zap } from "lucide-react";
+import { PageShell } from "@/components/page-shell";
 import { AppHeader } from "@/components/app-header";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { GuestBanner } from "@/components/guest-banner";
@@ -77,8 +78,7 @@ export function CountersDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent/40 via-background to-background">
-      <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
+    <PageShell>
         <AppHeader
           variant="home"
           subtitle="Your path to 10,000 hours. Log minutes, track counters, watch mastery grow."
@@ -86,19 +86,22 @@ export function CountersDashboard() {
 
         {isGuest && <GuestBanner />}
 
-        <Card className="mb-6 border-primary/15 bg-primary/5">
-          <CardContent className="flex items-center justify-between gap-4 p-4">
-            <div>
-              <p className="text-sm text-muted-foreground">This week</p>
-              <p className="text-2xl font-semibold tabular-nums">
-                {formatGoalHours(weekHours)}
-              </p>
-            </div>
-            <p className="max-w-[12rem] text-right text-sm text-muted-foreground">
-              Logged across all counters · Mon–Sun
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/weekly" className="mb-6 block">
+          <Card className="glass-card border-primary/15 transition-colors hover:border-primary/35">
+            <CardContent className="flex items-center justify-between gap-4 p-4">
+              <div>
+                <p className="text-sm text-muted-foreground">This week</p>
+                <p className="text-2xl font-semibold tabular-nums">
+                  {formatGoalHours(weekHours)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="hidden sm:inline">Weekly mode</span>
+                <ChevronRight className="size-5 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">Your counters</h2>
@@ -193,7 +196,7 @@ export function CountersDashboard() {
 
             return (
               <li key={counter.id}>
-                <Card className="overflow-hidden transition-colors hover:border-primary/30">
+                <Card className="glass-card overflow-hidden transition-colors hover:border-primary/30">
                   <Link href={`/counter/${counter.id}`} className="block">
                     <CardContent className="p-4">
                       <div className="mb-3 flex items-start justify-between gap-3">
@@ -288,7 +291,6 @@ export function CountersDashboard() {
             if (removeId) handleRemove(removeId);
           }}
         />
-      </div>
-    </div>
+    </PageShell>
   );
 }
